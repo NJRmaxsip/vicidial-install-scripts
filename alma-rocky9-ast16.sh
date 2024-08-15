@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "Vicidial installation AlmaLinux/RockyLinux with CyburPhone and Dynamic portal"
+echo "Vicidial installation AlmaLinux/RockyLinux"
 
 export LC_ALL=C
 
@@ -416,11 +416,6 @@ perl install.pl --no-prompt
 #Install Crontab
 cat <<CRONTAB>> /root/crontab-file
 
-###certbot renew
-51 23 1 * * /usr/bin/systemctl stop firewalld
-52 23 1 * * /usr/sbin/certbot renew
-53 23 1 * * /usr/bin/systemctl start firewalld
-54 23 1 * * /usr/bin/systemctl restart httpd
 
 ### recording mixing/compressing/ftping scripts
 #0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57 * * * * /usr/share/astguiclient/AST_CRON_audio_1_move_mix.pl
@@ -510,15 +505,6 @@ cat <<CRONTAB>> /root/crontab-file
 ######TILTIX GARBAGE FILES DELETE
 #00 22 * * * root cd /tmp/ && find . -name '*TILTXtmp*' -type f -delete
 
-### Dynportal
-@reboot /usr/bin/VB-firewall --whitelist=ViciWhite --dynamic --quiet
-* * * * * /usr/bin/VB-firewall --whitelist=ViciWhite --dynamic --quiet
-* * * * * /usr/bin/VB-firewall --white --dynamic --quiet
-* * * * * sleep 10; /usr/bin/VB-firewall --white --dynamic --quiet
-* * * * * sleep 20; /usr/bin/VB-firewall --white --dynamic --quiet
-* * * * * sleep 30; /usr/bin/VB-firewall --white --dynamic --quiet
-* * * * * sleep 40; /usr/bin/VB-firewall --white --dynamic --quiet
-* * * * * sleep 50; /usr/bin/VB-firewall --white --dynamic --quiet
 
 CRONTAB
 
@@ -591,41 +577,6 @@ chmod +x /etc/rc.d/rc.local
 systemctl enable rc-local
 systemctl start rc-local
 
-##Install CyburPhone
-cd /var/www/html
-git clone https://github.com/carpenox/CyburPhone.git
-chmod -R 744 CyburPhone
-chown -R apache:apache CyburPhone
-
-##Install Dynportal
-yum install -y firewalld
-cd /home
-wget https://dialer.one/dynportal.zip
-wget https://dialer.one/firewall.zip
-wget https://dialer.one/aggregate
-wget https://dialer.one/VB-firewall
-
-mkdir -p /var/www/vhosts/dynportal
-mv /home/dynportal.zip /var/www/vhosts/dynportal/
-mv /home/firewall.zip /etc/firewalld/
-cd /var/www/vhosts/dynportal/
-unzip dynportal.zip
-chmod -R 755 *
-chown -R apache:apache *
-cd etc/httpd/conf.d/
-mv viciportal-ssl.conf viciportal.conf /etc/httpd/conf.d/
-cd /etc/firewalld/
-unzip -o firewall.zip
-cd zones/
-rm -rf public.xml trusted.xml
-cd /etc/firewalld/
-mv -bf public.xml trusted.xml /etc/firewalld/zones/
-mv /home/aggregate /usr/bin/
-chmod +x /usr/bin/aggregate
-mv /home/VB-firewall /usr/bin/
-chmod +x /usr/bin/VB-firewall
-
-firewall-offline-cmd --add-port=446/tcp --zone=public
 
 ##Fix ip_relay
 cd /usr/src/astguiclient/trunk/extras/ip_relay/
@@ -742,12 +693,7 @@ EOF
 sed -i 's|#Banner none|Banner /etc/ssh/sshd_banner|g' /etc/ssh/sshd_config
 
 tee -a /etc/ssh/sshd_banner <<EOF
-Thank you for choosing CyburDial and carpenox's auto installer!
-
-Visit our Knowledge Base at https://www.dialer.one
-
-Support: info@dialer.one
-Skype Live Chat Support: https://join.skype.com/ujkQ7i5lV78O
+Vicidial on Alma
 EOF
 
 #add rc-local as a service - thx to ras
@@ -783,18 +729,9 @@ WELCOME
 chmod 777 /var/spool/asterisk/monitorDONE
 chkconfig asterisk off
 
-yum in certbot -y
-systemctl enable certbot-renew.timer
-systemctl start certbot-renew.timer
-cd /usr/src/vicidial-install-scripts
-chmod +x vicidial-enable-webrtc.sh
-service firewalld stop
-./vicidial-enable-webrtc.sh
-service firewalld start
-systemctl enable firewalld
+
 systemctl enable rc-local
 
-mv /etc/httpd/conf.d/viciportal-ssl.conf /etc/httpd/conf.d/viciportal-ssl.conf.off
 
 read -p 'Press Enter to Reboot: '
 
